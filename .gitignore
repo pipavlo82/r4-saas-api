@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Env / local
+.env
+.env.*
+*.log
+
+# Node (на всяк)
+node_modules/
+
+# Docker
+*.pid

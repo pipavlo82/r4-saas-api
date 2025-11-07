@@ -1,0 +1,14 @@
+services:
+  r4core:
+    image: pipavlo/r4-local-test:latest
+    environment:
+      - API_KEY=demo
+    # не відкриваємо порти — gateway сам бачить r4core по внутрішній мережі
+
+  gateway:
+    build: .
+    env_file: .env
+    ports:
+      - "8082:8082"   # тільки gateway буде видно ззовні
+    depends_on:
+      - r4core
