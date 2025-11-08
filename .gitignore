@@ -13,3 +13,9 @@ node_modules/
 
 # Docker
 *.pid
+*.bak.*
+__pycache__/
+*.pyc
+*.pyo
+.DS_Store
+.venv/

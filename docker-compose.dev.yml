@@ -1,0 +1,4 @@
+services:
+  gateway:
+    build: .
+    image: pipavlo/r4-saas-api:dev

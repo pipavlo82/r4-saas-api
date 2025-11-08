@@ -1,3 +1,4 @@
+from app.verify_route import router as verify_router
 import os, time, asyncio
 from typing import Dict, Tuple
 from fastapi import FastAPI, Query, Header, HTTPException, Response, Request, Depends
@@ -5,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import httpx
 
 app = FastAPI(title="R4 SaaS API", version=os.getenv("GATEWAY_VERSION","v0.1.3"))
+app.include_router(verify_router)
 
 PORT = int(os.getenv("PORT", "8082"))
 PUBLIC_API_KEY = os.getenv("PUBLIC_API_KEY", "demo")
