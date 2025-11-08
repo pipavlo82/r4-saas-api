@@ -1,14 +1,29 @@
 services:
+  r4core8080:
+    build: ./core-dev
+    container_name: r4core8080
+    ports:
+      - "8080:8080"
+
   r4core:
     image: pipavlo/r4-local-test:latest
+    container_name: r4core
     environment:
       - API_KEY=demo
-    # не відкриваємо порти — gateway сам бачить r4core по внутрішній мережі
+    ports:
+      - "8081:8081"
 
   gateway:
-    build: .
-    env_file: .env
+    image: pipavlo/r4-saas-api:latest   # або :v0.1.1, якщо хочеш зафіксувати
+    container_name: r4-saas-api-gateway-1
+    environment:
+      - PORT=8082
+      - PUBLIC_API_KEY=demo
+      - CORE_URL=http://r4core8080:8080
+      - VRF_URL=http://r4core:8081
+      - INTERNAL_R4_API_KEY=demo
     ports:
-      - "8082:8082"   # тільки gateway буде видно ззовні
+      - "8082:8082"
     depends_on:
+      - r4core8080
       - r4core
