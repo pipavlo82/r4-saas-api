@@ -22,6 +22,7 @@ services:
       - CORE_URL=http://r4core8080:8080
       - VRF_URL=http://r4core:8081
       - INTERNAL_R4_API_KEY=demo
+      - GATEWAY_VERSION=v0.1.5
     ports:
       - "8082:8082"
     depends_on:
