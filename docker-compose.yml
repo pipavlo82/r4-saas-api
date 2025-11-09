@@ -14,7 +14,7 @@ services:
       - "8081:8081"
 
   gateway:
-    image: pipavlo/r4-saas-api:v0.1.4
+    image: pipavlo/r4-saas-api:v0.1.5
     container_name: r4-saas-api-gateway-1
     environment:
       - PORT=8082
