@@ -1,0 +1,610 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>RE4CTOR SaaS API – Randomness & VRF Gateway</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    :root {
+      --bg: #050816;
+      --bg-alt: #0b1020;
+      --accent: #06b6d4;
+      --accent-soft: rgba(6,182,212,0.15);
+      --text: #f9fafb;
+      --muted: #9ca3af;
+      --border: #1f2937;
+      --error: #f97373;
+      --ok: #22c55e;
+      --radius: 16px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #111827 0, #020617 45%, #000 100%);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .page {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 24px 16px 64px;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .logo-badge {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 20%, #22c55e, #06b6d4 40%, #0ea5e9 80%);
+      box-shadow: 0 0 24px rgba(6,182,212,0.9);
+    }
+    nav {
+      display: flex;
+      gap: 16px;
+      font-size: 14px;
+      color: var(--muted);
+    }
+    nav a { opacity: 0.85; }
+    nav a:hover { opacity: 1; }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 2.1fr) minmax(0, 1.8fr);
+      gap: 24px;
+      margin-bottom: 32px;
+    }
+    @media (max-width: 900px) {
+      .hero { grid-template-columns: minmax(0,1fr); }
+    }
+    .hero-left h1 {
+      font-size: clamp(32px, 4vw, 40px);
+      line-height: 1.05;
+      margin: 0 0 12px;
+    }
+    .hero-left h1 span {
+      background: linear-gradient(120deg, #22c55e, #06b6d4, #0ea5e9);
+      -webkit-background-clip: text;
+      color: transparent;
+    }
+    .hero-sub {
+      color: var(--muted);
+      font-size: 15px;
+      max-width: 520px;
+      margin-bottom: 18px;
+    }
+    .hero-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 18px;
+      font-size: 12px;
+    }
+    .badge {
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(15,23,42,0.7);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--muted);
+    }
+    .badge-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #22c55e;
+      box-shadow: 0 0 12px rgba(34,197,94,0.9);
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .btn {
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-size: 14px;
+      padding: 8px 16px;
+      cursor: pointer;
+      background: none;
+      color: var(--text);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-primary {
+      background: linear-gradient(120deg, #22c55e, #06b6d4);
+      color: #020617;
+      font-weight: 600;
+      box-shadow: 0 10px 30px rgba(6,182,212,0.35);
+    }
+    .btn-outline {
+      border-color: var(--border);
+      color: var(--muted);
+      background: rgba(15,23,42,0.9);
+    }
+    .btn:hover { filter: brightness(1.03); transform: translateY(-0.5px); }
+    .btn:active { transform: translateY(0); filter: brightness(0.97); }
+
+    .hero-meta {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .hero-right {
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: radial-gradient(circle at top left, rgba(6,182,212,0.16), transparent 60%),
+                  linear-gradient(to bottom right, rgba(15,23,42,0.95), rgba(2,6,23,0.9));
+      padding: 16px 16px 14px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .right-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      align-items: center;
+      gap: 8px;
+    }
+    .right-title { font-size: 12px; color: #e5e7eb; }
+    .right-tabs {
+      display: inline-flex;
+      border-radius: 999px;
+      padding: 2px;
+      background: rgba(15,23,42,0.9);
+      border: 1px solid var(--border);
+    }
+    .right-tab {
+      border-radius: 999px;
+      padding: 3px 10px;
+      font-size: 11px;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+    }
+    .right-tab.active {
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+    pre {
+      margin: 0;
+      padding: 8px 10px;
+      border-radius: 10px;
+      background: rgba(15,23,42,0.95);
+      border: 1px solid rgba(31,41,55,0.9);
+      overflow-x: auto;
+      font-size: 11px;
+      line-height: 1.5;
+      font-family: SFMono-Regular, Menlo, Monaco, "Ubuntu Mono", monospace;
+      color: #e5e7eb;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0,1fr));
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    @media (max-width: 900px) {
+      .grid { grid-template-columns: minmax(0,1fr); }
+    }
+    .card {
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: var(--bg-alt);
+      padding: 14px 14px 12px;
+      font-size: 13px;
+    }
+    .card h3 {
+      margin: 0 0 4px;
+      font-size: 14px;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .pill-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+    .card p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .section-title {
+      font-size: 16px;
+      margin: 0 0 8px;
+    }
+    .section-sub {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      border-radius: var(--radius);
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background: rgba(15,23,42,0.9);
+    }
+    .table th, .table td {
+      padding: 6px 10px;
+      border-bottom: 1px solid rgba(31,41,55,0.8);
+    }
+    .table th {
+      text-align: left;
+      font-weight: 500;
+      color: var(--muted);
+      background: rgba(15,23,42,0.95);
+    }
+    .table tr:last-child td {
+      border-bottom: none;
+    }
+    code {
+      font-family: SFMono-Regular, Menlo, Monaco, "Ubuntu Mono", monospace;
+      font-size: 12px;
+      background: rgba(15,23,42,0.9);
+      padding: 2px 4px;
+      border-radius: 4px;
+      border: 1px solid rgba(31,41,55,0.8);
+    }
+
+    .playground {
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: radial-gradient(circle at top, rgba(6,182,212,0.12), transparent 60%),
+                  rgba(15,23,42,0.96);
+      padding: 14px;
+      display: grid;
+      grid-template-columns: minmax(0, 1.4fr) minmax(0, 1.6fr);
+      gap: 14px;
+      font-size: 12px;
+    }
+    @media (max-width: 900px) {
+      .playground { grid-template-columns: minmax(0,1fr); }
+    }
+    .field {
+      margin-bottom: 8px;
+    }
+    .field label {
+      display: block;
+      margin-bottom: 2px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .field input, .field select {
+      width: 100%;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      padding: 6px 10px;
+      background: #020617;
+      color: var(--text);
+      font-size: 12px;
+      outline: none;
+    }
+    .field input:focus, .field select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px rgba(6,182,212,0.3);
+    }
+    .status {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 4px;
+      min-height: 14px;
+    }
+    .status.ok { color: var(--ok); }
+    .status.err { color: var(--error); }
+
+    footer {
+      margin-top: 32px;
+      font-size: 11px;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+      border-top: 1px solid rgba(31,41,55,0.7);
+      padding-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header>
+      <div class="logo">
+        <div class="logo-badge"></div>
+        <span>RE4CTOR • SaaS API</span>
+      </div>
+      <nav>
+        <a href="#api">API</a>
+        <a href="#playground">Playground</a>
+        <a href="/docs" target="_blank">OpenAPI docs</a>
+        <a href="https://github.com/pipavlo82/r4-saas-api" target="_blank">GitHub</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="hero-left">
+          <h1>
+            Quantum-ready randomness<br />
+            <span>for games, DeFi & defense</span>
+          </h1>
+          <p class="hero-sub">
+            RE4CTOR SaaS API is a low-latency gateway to RE4CTOR Core RNG and dual-signed
+            VRF (ECDSA + ML-DSA-65). Built for production workloads, verified on-chain.
+          </p>
+
+          <div class="hero-badges">
+            <div class="badge">
+              <span class="badge-dot"></span> 30-50 ms end-to-end (dev)
+            </div>
+            <div class="badge">
+              PQ-ready (ML-DSA-65)
+            </div>
+            <div class="badge">
+              On-chain verifiable randomness
+            </div>
+          </div>
+
+          <div class="hero-actions">
+            <button class="btn btn-primary" onclick="scrollToPlayground()">
+              Try live API
+            </button>
+            <a class="btn btn-outline" href="https://github.com/pipavlo82/r4-saas-api" target="_blank">
+              View on GitHub
+            </a>
+          </div>
+          <div class="hero-meta">
+            Gateway version: <code id="meta-version">loading…</code> • Core: <code id="meta-core">-</code> • VRF: <code id="meta-vrf">-</code>
+          </div>
+        </div>
+
+        <div class="hero-right">
+          <div class="right-header">
+            <div class="right-title">Quickstart</div>
+            <div class="right-tabs">
+              <button class="right-tab active" data-snippet="curl">curl</button>
+              <button class="right-tab" data-snippet="js">Node.js</button>
+              <button class="right-tab" data-snippet="py">Python</button>
+            </div>
+          </div>
+          <pre id="snippet-box">
+curl -s -H "X-API-Key: demo" \
+  "http://localhost:8082/v1/random?n=16&amp;fmt=hex"
+          </pre>
+        </div>
+      </section>
+
+      <section id="api">
+        <h2 class="section-title">HTTP API</h2>
+        <p class="section-sub">
+          Minimal, production-ready interface to RE4CTOR Core RNG and VRF node.
+        </p>
+        <div class="grid">
+          <div class="card">
+            <div class="pill">
+              <span class="pill-dot"></span> GET /v1/health
+            </div>
+            <h3>Health check</h3>
+            <p>Lightweight liveness endpoint. Returns <code>{"ok": true}</code> when the gateway is online.</p>
+          </div>
+          <div class="card">
+            <div class="pill">
+              <span class="pill-dot"></span> GET /v1/random
+            </div>
+            <h3>Raw randomness</h3>
+            <p>Proxy to RE4CTOR Core RNG. Supports variable length output and multiple encodings.</p>
+          </div>
+          <div class="card">
+            <div class="pill">
+              <span class="pill-dot"></span> GET /v1/vrf + POST /v1/verify
+            </div>
+            <h3>VRF + verification</h3>
+            <p>Fetch dual-signed randomness and verify ECDSA recovery (ready for on-chain usage).</p>
+          </div>
+        </div>
+
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Endpoint</th>
+              <th>Description</th>
+              <th>Auth</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>GET /v1/health</code></td>
+              <td>Simple health check (<code>{"ok": true}</code>).</td>
+              <td>None</td>
+            </tr>
+            <tr>
+              <td><code>GET /v1/meta</code></td>
+              <td>Gateway metadata (version, upstream URLs).</td>
+              <td>None</td>
+            </tr>
+            <tr>
+              <td><code>GET /v1/random?n=16&amp;fmt=hex</code></td>
+              <td>Random bytes from RE4CTOR Core RNG (hex/base64/raw).</td>
+              <td><code>X-API-Key</code> or <code>?api_key=</code></td>
+            </tr>
+            <tr>
+              <td><code>GET /v1/vrf?sig=ecdsa</code></td>
+              <td>Verifiable randomness with ECDSA + ML-DSA-65 signature.</td>
+              <td><code>X-API-Key</code> or <code>?api_key=</code></td>
+            </tr>
+            <tr>
+              <td><code>POST /v1/verify</code></td>
+              <td>Recover signer from <code>(msg_hash, v, r, s)</code> and compare with expected address.</td>
+              <td><code>X-API-Key</code> (optional)</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="playground" style="margin-top:24px;">
+        <h2 class="section-title">Live playground</h2>
+        <p class="section-sub">
+          Test the gateway directly from your browser. Uses your local deployment at <code>http://localhost:8082</code>.
+        </p>
+
+        <div class="playground">
+          <div>
+            <div class="field">
+              <label for="api-key">X-API-Key</label>
+              <input id="api-key" type="text" value="demo" />
+            </div>
+            <div class="field">
+              <label for="rand-n">Random bytes (n)</label>
+              <input id="rand-n" type="number" min="1" max="1024" value="16" />
+            </div>
+            <div class="field">
+              <label for="rand-fmt">Format</label>
+              <select id="rand-fmt">
+                <option value="hex" selected>hex</option>
+                <option value="base64">base64</option>
+              </select>
+            </div>
+            <button class="btn btn-primary" style="margin-top:4px;" onclick="callRandom()">Call /v1/random</button>
+            <div id="rand-status" class="status"></div>
+          </div>
+
+          <div>
+            <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">
+              Response (pretty-printed JSON):
+            </div>
+            <pre id="playground-output">{ }</pre>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <div>RE4CTOR SaaS API • Gateway for Core RNG &amp; VRF</div>
+      <div>
+        <a href="/docs" target="_blank">OpenAPI docs</a> ·
+        <a href="https://github.com/pipavlo82/r4-saas-api" target="_blank">GitHub</a>
+      </div>
+    </footer>
+  </div>
+
+<script>
+  const GATEWAY_URL = "http://localhost:8082";
+
+  // Snippet switching
+  const snippets = {
+    curl: `curl -s -H "X-API-Key: demo" \\
+  "${GATEWAY_URL}/v1/random?n=16&fmt=hex"`,
+    js: `import fetch from "node-fetch";
+
+const res = await fetch("${GATEWAY_URL}/v1/random?n=16&fmt=hex", {
+  headers: { "X-API-Key": "demo" },
+});
+const data = await res.json();
+console.log(data.random);`,
+    py: `import requests
+
+res = requests.get(
+    "${GATEWAY_URL}/v1/random",
+    params={"n": 16, "fmt": "hex"},
+    headers={"X-API-Key": "demo"},
+)
+print(res.json()["random"])`,
+  };
+
+  document.querySelectorAll(".right-tab").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".right-tab").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      const key = btn.getAttribute("data-snippet");
+      document.getElementById("snippet-box").textContent = snippets[key] || "";
+    });
+  });
+
+  function scrollToPlayground() {
+    const el = document.getElementById("playground");
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  async function callRandom() {
+    const apiKey = document.getElementById("api-key").value.trim();
+    const n = parseInt(document.getElementById("rand-n").value, 10) || 16;
+    const fmt = document.getElementById("rand-fmt").value;
+    const statusEl = document.getElementById("rand-status");
+    const outEl = document.getElementById("playground-output");
+
+    statusEl.textContent = "Calling /v1/random…";
+    statusEl.className = "status";
+    outEl.textContent = "{ }";
+
+    try {
+      const res = await fetch(\`\${GATEWAY_URL}/v1/random?n=\${n}&fmt=\${fmt}\`, {
+        headers: apiKey ? { "X-API-Key": apiKey } : {},
+      });
+      const txt = await res.text();
+      let data;
+      try {
+        data = JSON.parse(txt);
+      } catch {
+        data = { raw: txt };
+      }
+      outEl.textContent = JSON.stringify(data, null, 2);
+      statusEl.textContent = res.ok ? "OK" : \`HTTP \${res.status}\`;
+      statusEl.className = "status " + (res.ok ? "ok" : "err");
+    } catch (e) {
+      statusEl.textContent = "Network error: " + e;
+      statusEl.className = "status err";
+    }
+  }
+
+  // Load meta info
+  (async () => {
+    try {
+      const res = await fetch(\`\${GATEWAY_URL}/v1/meta\`);
+      const data = await res.json();
+      document.getElementById("meta-version").textContent = data.gateway_version || "-";
+      document.getElementById("meta-core").textContent = data.core_url || "-";
+      document.getElementById("meta-vrf").textContent = data.vrf_url || "-";
+    } catch (e) {
+      document.getElementById("meta-version").textContent = "unavailable";
+    }
+  })();
+</script>
+</body>
+</html>
