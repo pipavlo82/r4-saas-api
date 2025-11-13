@@ -19,3 +19,8 @@ __pycache__/
 *.pyo
 .DS_Store
 .venv/
+
+# local tools & configs
+cloudflared.deb
+keys.txt
+r4-gw.conf
