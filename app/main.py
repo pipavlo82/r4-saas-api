@@ -597,3 +597,17 @@ async def verify_signature(req: VerifyRequest):
         "expected": req.expected_signer,
         "v_used": v_norm,
     }
+
+import os  # у тебе вже є, але хай буде вдруге – не зламає
+
+@app.get("/v1/env_debug")
+async def env_debug():
+    keys = [
+        "CORE_URL",
+        "VRF_URL",
+        "PUBLIC_API_KEY",
+        "INTERNAL_R4_API_KEY",
+        "GATEWAY_VERSION",
+        "UVICORN_WORKERS",
+    ]
+    return {k: os.getenv(k) for k in keys}
