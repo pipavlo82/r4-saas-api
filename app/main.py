@@ -23,8 +23,15 @@ from eth_account import Account
 # Config from environment
 # -------------------------------------------------------------------
 
-CORE_URL = os.getenv("CORE_URL", "http://r4core8080:8080")   # змінюй через env на свій робочий інстанс
-VRF_URL = os.getenv("VRF_URL", "http://r4core:8081")
+CORE_URL = os.getenv(
+    "CORE_URL",
+    "https://treo-exchanges-dennis-week.trycloudflare.com",
+)
+VRF_URL = os.getenv(
+    "VRF_URL",
+    "https://leon-organizations-resolved-continue.trycloudflare.com",
+)
+
 PUBLIC_API_KEY = os.getenv("PUBLIC_API_KEY", "demo")
 INTERNAL_R4_API_KEY = os.getenv("INTERNAL_R4_API_KEY", "demo")
 GATEWAY_VERSION = os.getenv("GATEWAY_VERSION", "v0.1.5")
