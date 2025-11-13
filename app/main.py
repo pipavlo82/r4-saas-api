@@ -23,19 +23,27 @@ from eth_account import Account
 # Config from environment
 # -------------------------------------------------------------------
 
-CORE_URL = os.getenv(
+def _clean_env(name: str, default: str) -> str:
+    # Забираємо \n, \r, пробіли навколо, щоб не ламати HTTP-заголовки
+    raw = os.getenv(name, default)
+    if raw is None:
+        return default
+    return raw.strip()
+
+CORE_URL = _clean_env(
     "CORE_URL",
     "https://treo-exchanges-dennis-week.trycloudflare.com",
-)
-VRF_URL = os.getenv(
+).rstrip("/")  # щоб не було //random
+
+VRF_URL = _clean_env(
     "VRF_URL",
     "https://leon-organizations-resolved-continue.trycloudflare.com",
-)
+).rstrip("/")
 
-PUBLIC_API_KEY = os.getenv("PUBLIC_API_KEY", "demo")
-INTERNAL_R4_API_KEY = os.getenv("INTERNAL_R4_API_KEY", "demo")
-GATEWAY_VERSION = os.getenv("GATEWAY_VERSION", "v0.1.5")
-LOG_LEVEL = os.getenv("LOG_LEVEL", "info")
+PUBLIC_API_KEY = _clean_env("PUBLIC_API_KEY", "demo")
+INTERNAL_R4_API_KEY = _clean_env("INTERNAL_R4_API_KEY", "demo")
+GATEWAY_VERSION = _clean_env("GATEWAY_VERSION", "v0.1.5")
+LOG_LEVEL = _clean_env("LOG_LEVEL", "info")
 
 
 # -------------------------------------------------------------------
