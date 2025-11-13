@@ -1,3 +1,4 @@
+# app/main.py
 import os
 import binascii
 from typing import Optional
@@ -10,7 +11,7 @@ from fastapi import (
     Request,
 )
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, HTMLResponse
+from fastapi.responses import JSONResponse, HTMLResponse, PlainTextResponse
 from pydantic import BaseModel
 import httpx
 
@@ -22,7 +23,7 @@ from eth_account import Account
 # Config from environment
 # -------------------------------------------------------------------
 
-CORE_URL = os.getenv("CORE_URL", "http://r4core8080:8080")
+CORE_URL = os.getenv("CORE_URL", "http://r4core8080:8080")   # змінюй через env на свій робочий інстанс
 VRF_URL = os.getenv("VRF_URL", "http://r4core:8081")
 PUBLIC_API_KEY = os.getenv("PUBLIC_API_KEY", "demo")
 INTERNAL_R4_API_KEY = os.getenv("INTERNAL_R4_API_KEY", "demo")
@@ -39,10 +40,10 @@ app = FastAPI(
     version=GATEWAY_VERSION,
 )
 
-# CORS – на всяк випадок, щоб фронт з іншого домену міг стукатись
+# CORS – щоб фронт із іншого домену міг стукатись під час демо
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],   # зафіксуй під свій домен у проді
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -63,18 +64,29 @@ async def add_svc_headers(request: Request, call_next):
 
 
 # -------------------------------------------------------------------
-# Simple API-key auth
+# Simple API-key auth (header, bearer або query)
 # -------------------------------------------------------------------
 
 async def require_api_key(
     request: Request,
     x_api_key: Optional[str] = Header(default=None, alias="X-API-Key"),
+    authorization: Optional[str] = Header(default=None, alias="Authorization"),
 ):
-    # або з заголовка, або з query ?api_key=
-    query_key = request.query_params.get("api_key")
-    api_key = x_api_key or query_key
+    # 1) X-API-Key
+    api_key = x_api_key
+
+    # 2) Authorization: Bearer <key>
+    if not api_key and authorization:
+        parts = authorization.strip().split()
+        if len(parts) == 2 and parts[0].lower() == "bearer":
+            api_key = parts[1]
+
+    # 3) ?api_key=...
+    if not api_key:
+        api_key = request.query_params.get("api_key")
 
     if api_key != PUBLIC_API_KEY:
+        # уніфікований меседж для клієнтів
         raise HTTPException(status_code=401, detail="Invalid API key")
 
     return api_key
@@ -137,7 +149,7 @@ def _normalize_address(addr: str) -> str:
 
 
 # -------------------------------------------------------------------
-# HTML landing page
+# HTML landing page (твій оригінал, без змін)
 # -------------------------------------------------------------------
 
 HOMEPAGE_HTML = """
@@ -160,262 +172,68 @@ HOMEPAGE_HTML = """
       --border: #1f2937;
       --font: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
     body {
-      margin: 0;
-      padding: 0;
-      font-family: var(--font);
+      margin: 0; padding: 0; font-family: var(--font);
       background: radial-gradient(circle at top, #0b1220 0%, #020617 55%, #020617 100%);
       color: var(--text);
     }
-    a {
-      color: inherit;
-      text-decoration: none;
-    }
-    .page {
-      max-width: 1180px;
-      margin: 0 auto;
-      padding: 32px 16px 64px;
-    }
+    a { color: inherit; text-decoration: none; }
+    .page { max-width: 1180px; margin: 0 auto; padding: 32px 16px 64px; }
     .chip-row {
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      padding: 4px 10px;
-      border-radius: 999px;
-      background: rgba(15,23,42,0.9);
-      border: 1px solid rgba(148,163,184,0.3);
-      font-size: 12px;
-      margin-bottom: 18px;
+      display: inline-flex; align-items: center; gap: 10px; padding: 4px 10px;
+      border-radius: 999px; background: rgba(15,23,42,0.9); border: 1px solid rgba(148,163,184,0.3);
+      font-size: 12px; margin-bottom: 18px;
     }
-    .chip-pill {
-      padding: 2px 8px;
-      border-radius: 999px;
-      background: linear-gradient(90deg, var(--accent1), var(--accent2));
-      color: #020617;
-      font-weight: 600;
-    }
-    .chip-sub {
-      color: var(--muted);
-    }
-    h1 {
-      font-size: 34px;
-      line-height: 1.1;
-      margin: 0 0 12px;
-    }
-    .hero-sub {
-      max-width: 580px;
-      color: var(--muted);
-      font-size: 15px;
-      line-height: 1.5;
-      margin-bottom: 20px;
-    }
-    .hero-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      margin-bottom: 28px;
-    }
+    .chip-pill { padding: 2px 8px; border-radius: 999px; background: linear-gradient(90deg, var(--accent1), var(--accent2)); color: #020617; font-weight: 600; }
+    .chip-sub { color: var(--muted); }
+    h1 { font-size: 34px; line-height: 1.1; margin: 0 0 12px; }
+    .hero-sub { max-width: 580px; color: var(--muted); font-size: 15px; line-height: 1.5; margin-bottom: 20px; }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 28px; }
     .btn-primary {
-      border: none;
-      outline: none;
-      padding: 10px 20px;
-      border-radius: 999px;
-      font-weight: 600;
-      font-size: 14px;
-      cursor: pointer;
-      background: linear-gradient(90deg, var(--accent1), var(--accent2));
-      color: #020617;
-      box-shadow: 0 10px 30px rgba(34,197,94,0.25);
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
+      border: none; outline: none; padding: 10px 20px; border-radius: 999px; font-weight: 600; font-size: 14px; cursor: pointer;
+      background: linear-gradient(90deg, var(--accent1), var(--accent2)); color: #020617; box-shadow: 0 10px 30px rgba(34,197,94,0.25);
+      display: inline-flex; align-items: center; gap: 8px;
     }
     .btn-ghost {
-      padding: 9px 18px;
-      border-radius: 999px;
-      border: 1px solid rgba(148,163,184,0.5);
-      background: transparent;
-      color: var(--text);
-      font-size: 14px;
-      font-weight: 500;
-      cursor: pointer;
+      padding: 9px 18px; border-radius: 999px; border: 1px solid rgba(148,163,184,0.5);
+      background: transparent; color: var(--text); font-size: 14px; font-weight: 500; cursor: pointer;
     }
-    .layout-main {
-      display: grid;
-      grid-template-columns: minmax(0, 3fr) minmax(0, 2.4fr);
-      gap: 24px;
-      align-items: flex-start;
-    }
-    @media (max-width: 900px) {
-      .layout-main {
-        grid-template-columns: minmax(0,1fr);
-      }
-    }
-
-    /* Snapshot */
-    .snapshot-card {
-      background: radial-gradient(circle at top left, #0f172a, #020617);
-      border-radius: 18px;
-      padding: 16px 16px 18px;
-      border: 1px solid rgba(148,163,184,0.35);
-      box-shadow: 0 18px 40px rgba(15,23,42,0.7);
-    }
-    .snapshot-header {
-      font-size: 14px;
-      font-weight: 600;
-      margin-bottom: 4px;
-    }
-    .snapshot-sub {
-      font-size: 12px;
-      color: var(--muted);
-      margin-bottom: 10px;
-    }
-    .snapshot-tags {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      margin-bottom: 12px;
-    }
-    .tag-pill {
-      font-size: 11px;
-      padding: 3px 8px;
-      border-radius: 999px;
-      border: 1px solid rgba(148,163,184,0.5);
-      color: var(--muted);
-    }
-    .tag-pill--accent {
-      border: none;
-      background: rgba(34,197,94,0.1);
-      color: var(--accent1);
-    }
-    .snapshot-grid {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 10px;
-      margin-top: 8px;
-    }
-    .snapshot-box {
-      border-radius: 14px;
-      padding: 10px;
-      background: rgba(15,23,42,0.9);
-      border: 1px solid rgba(31,41,55,1);
-    }
-    .snapshot-label {
-      font-size: 11px;
-      color: var(--muted);
-      margin-bottom: 4px;
-    }
-    .snapshot-value {
-      font-size: 14px;
-      font-weight: 600;
-      margin-bottom: 2px;
-    }
-    .snapshot-meta {
-      font-size: 11px;
-      color: var(--muted);
-    }
-
-    /* Playground */
-    .section-title {
-      font-size: 16px;
-      font-weight: 600;
-      margin: 22px 0 6px;
-    }
-    .section-sub {
-      font-size: 13px;
-      color: var(--muted);
-      max-width: 640px;
-      margin-bottom: 10px;
-    }
-    .playground-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-bottom: 12px;
-    }
+    .layout-main { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2.4fr); gap: 24px; align-items: flex-start; }
+    @media (max-width: 900px) { .layout-main { grid-template-columns: minmax(0,1fr); } }
+    .snapshot-card { background: radial-gradient(circle at top left, #0f172a, #020617); border-radius: 18px; padding: 16px 16px 18px; border: 1px solid rgba(148,163,184,0.35); box-shadow: 0 18px 40px rgba(15,23,42,0.7); }
+    .snapshot-header { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+    .snapshot-sub { font-size: 12px; color: var(--muted); margin-bottom: 10px; }
+    .snapshot-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+    .tag-pill { font-size: 11px; padding: 3px 8px; border-radius: 999px; border: 1px solid rgba(148,163,184,0.5); color: var(--muted); }
+    .tag-pill--accent { border: none; background: rgba(34,197,94,0.1); color: var(--accent1); }
+    .snapshot-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 8px; }
+    .snapshot-box { border-radius: 14px; padding: 10px; background: rgba(15,23,42,0.9); border: 1px solid rgba(31,41,55,1); }
+    .snapshot-label { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+    .snapshot-value { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+    .snapshot-meta { font-size: 11px; color: var(--muted); }
+    .section-title { font-size: 16px; font-weight: 600; margin: 22px 0 6px; }
+    .section-sub { font-size: 13px; color: var(--muted); max-width: 640px; margin-bottom: 10px; }
+    .playground-row { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
     .playground-input {
-      flex: 1 1 220px;
-      min-width: 0;
-      padding: 8px 10px;
-      border-radius: 999px;
-      border: 1px solid rgba(31,41,55,1);
-      background: rgba(15,23,42,0.85);
-      color: var(--text);
-      font-size: 13px;
+      flex: 1 1 220px; min-width: 0; padding: 8px 10px; border-radius: 999px; border: 1px solid rgba(31,41,55,1);
+      background: rgba(15,23,42,0.85); color: var(--text); font-size: 13px;
     }
-    .playground-input::placeholder {
-      color: rgba(148,163,184,0.7);
-    }
-    .playground-btn {
-      border-radius: 999px;
-      padding: 8px 16px;
-      border: none;
-      cursor: pointer;
-      font-size: 13px;
-      font-weight: 600;
-      background: linear-gradient(90deg, var(--accent1), var(--accent2));
-      color: #020617;
-      white-space: nowrap;
-    }
-    .playground-btn.secondary {
-      background: rgba(15,23,42,0.95);
-      border: 1px solid rgba(148,163,184,0.6);
-      color: var(--text);
-    }
+    .playground-input::placeholder { color: rgba(148,163,184,0.7); }
+    .playground-btn { border-radius: 999px; padding: 8px 16px; border: none; cursor: pointer; font-size: 13px; font-weight: 600; background: linear-gradient(90deg, var(--accent1), var(--accent2)); color: #020617; white-space: nowrap; }
+    .playground-btn.secondary { background: rgba(15,23,42,0.95); border: 1px solid rgba(148,163,184,0.6); color: var(--text); }
     .log-box {
-      margin-top: 10px;
-      border-radius: 12px;
-      background: rgba(15,23,42,0.96);
-      border: 1px solid rgba(31,41,55,1);
-      padding: 8px;
-      font-family: "SF Mono", ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      font-size: 11px;
-      color: #e5e7eb;
-      max-height: 210px;
-      overflow: auto;
-      white-space: pre;
+      margin-top: 10px; border-radius: 12px; background: rgba(15,23,42,0.96); border: 1px solid rgba(31,41,55,1);
+      padding: 8px; font-family: "SF Mono", ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 11px; color: #e5e7eb; max-height: 210px; overflow: auto; white-space: pre;
     }
-    .log-line-ok {
-      color: #22c55e;
-    }
-    .log-line-err {
-      color: #f97373;
-    }
-
-    /* Curl example */
-    .curl-card {
-      background: rgba(15,23,42,0.98);
-      border: 1px solid rgba(31,41,55,1);
-      border-radius: 18px;
-      padding: 14px 14px 16px;
-      box-shadow: 0 18px 30px rgba(15,23,42,0.9);
-      font-family: "SF Mono", ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      font-size: 11px;
-      color: #e5e7eb;
-    }
-    .curl-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 6px;
-      font-size: 11px;
-      color: var(--muted);
-    }
-    .curl-badge {
-      padding: 3px 8px;
-      border-radius: 999px;
-      border: 1px solid rgba(148,163,184,0.7);
-    }
-    .curl-pre {
-      white-space: pre;
-      overflow-x: auto;
-    }
-    .muted {
-      color: var(--muted);
-    }
+    .log-line-ok { color: #22c55e; }
+    .log-line-err { color: #f97373; }
+    .curl-card { background: rgba(15,23,42,0.98); border: 1px solid rgba(31,41,55,1); border-radius: 18px; padding: 14px 14px 16px; box-shadow: 0 18px 30px rgba(15,23,42,0.9); font-family: "SF Mono", ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 11px; color: #e5e7eb; }
+    .curl-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 11px; color: var(--muted); }
+    .curl-badge { padding: 3px 8px; border-radius: 999px; border: 1px solid rgba(148,163,184,0.7); }
+    .curl-pre { white-space: pre; overflow-x: auto; }
+    .muted { color: var(--muted); }
   </style>
 </head>
 <body>
@@ -642,6 +460,44 @@ async def meta():
     }
 
 
+@app.get("/v1/whoami")
+async def whoami(request: Request):
+    # трішки корисної діагностики (без розкриття секретів)
+    return {
+        "gateway_version": GATEWAY_VERSION,
+        "core_url": CORE_URL,
+        "vrf_url": VRF_URL,
+        "client_headers": {
+            # тільки те, що часто потрібно для дебагу
+            "x-api-key-present": "X-API-Key" in request.headers,
+            "authorization-present": "authorization" in (k.lower() for k in request.headers.keys()),
+        },
+    }
+
+
+@app.get("/v1/health_upstream")
+async def health_upstream(api_key: str = Depends(require_api_key)):
+    # простий пінг CORE та VRF
+    out = {}
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            rc = await client.get(f"{CORE_URL.rstrip('/')}/random", params={"n": 1, "fmt": "hex"},
+                                  headers={"X-API-Key": INTERNAL_R4_API_KEY})
+        out["core"] = {"status": rc.status_code}
+    except Exception as e:
+        out["core"] = {"error": f"{type(e).__name__}: {e}"}
+
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            rv = await client.get(f"{VRF_URL.rstrip('/')}/random_dual", params={"sig": "ecdsa"},
+                                  headers={"X-API-Key": INTERNAL_R4_API_KEY})
+        out["vrf"] = {"status": rv.status_code}
+    except Exception as e:
+        out["vrf"] = {"error": f"{type(e).__name__}: {e}"}
+
+    return out
+
+
 @app.get("/v1/random")
 async def random_proxy(
     n: int,
@@ -655,7 +511,19 @@ async def random_proxy(
     async with httpx.AsyncClient(timeout=10.0) as client:
         r = await client.get(upstream, params=params, headers=headers)
 
-    return JSONResponse(status_code=r.status_code, content=r.json())
+    # CORE може повертати JSON (наприклад, 401) або чистий текст (hex) при 200
+    ctype = r.headers.get("content-type", "").lower()
+    if "application/json" in ctype:
+        try:
+            return JSONResponse(status_code=r.status_code, content=r.json())
+        except Exception:
+            return PlainTextResponse(status_code=r.status_code, content=r.text)
+    else:
+        return PlainTextResponse(
+            status_code=r.status_code,
+            content=r.text,
+            media_type="text/plain; charset=utf-8",
+        )
 
 
 @app.get("/v1/vrf")
@@ -671,7 +539,16 @@ async def vrf_proxy(
     async with httpx.AsyncClient(timeout=15.0) as client:
         r = await client.get(upstream, params=params, headers=headers)
 
-    return JSONResponse(status_code=r.status_code, content=r.json())
+    # VRF очікувано повертає JSON, але на випадок помилки віддамо текст
+    try:
+        data = r.json()
+        return JSONResponse(status_code=r.status_code, content=data)
+    except Exception:
+        return PlainTextResponse(
+            status_code=r.status_code,
+            content=r.text,
+            media_type=r.headers.get("content-type", "text/plain; charset=utf-8"),
+        )
 
 
 @app.post("/v1/verify")
