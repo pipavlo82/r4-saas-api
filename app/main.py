@@ -10,7 +10,7 @@ from fastapi import (
     Request,
 )
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, HTMLResponse
+from fastapi.responses import JSONResponse, HTMLResponse, Response
 from pydantic import BaseModel
 import httpx
 
@@ -19,7 +19,7 @@ from eth_account import Account
 
 
 # -------------------------------------------------------------------
-# Config from environment (з зачисткою, щоб не ламати заголовки)
+# Config from environment
 # -------------------------------------------------------------------
 
 def _clean_env(name: str, default: str) -> str:
@@ -54,7 +54,6 @@ app = FastAPI(
     version=GATEWAY_VERSION,
 )
 
-# CORS – на всяк випадок, щоб фронт з іншого домену міг стукатись
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -65,13 +64,12 @@ app.add_middleware(
 
 
 # -------------------------------------------------------------------
-# Middleware: service headers
+# Middleware: headers
 # -------------------------------------------------------------------
 
 @app.middleware("http")
 async def add_svc_headers(request: Request, call_next):
     resp = await call_next(request)
-    # УВАГА: тут уже все значення застріпані вище
     resp.headers["X-R4-Gateway-Version"] = GATEWAY_VERSION
     resp.headers["X-R4-Core-URL"] = CORE_URL
     resp.headers["X-R4-VRF-URL"] = VRF_URL
@@ -116,7 +114,6 @@ HEX_CHARS = set("0123456789abcdef")
 
 
 def _clean_hex_64(s: str, field: str) -> str:
-    """normalize 0x, lowercase, ensure exactly 64 hex chars"""
     if s is None:
         raise HTTPException(status_code=400, detail=f"{field} is required")
 
@@ -167,18 +164,14 @@ HOMEPAGE_HTML = """
     :root {
       --bg: #020817;
       --card: #020617;
-      --card2: #020c1f;
       --accent1: #22c55e;
       --accent2: #06b6d4;
-      --accent-soft: rgba(34,197,94,0.15);
       --text: #e5e7eb;
       --muted: #9ca3af;
       --border: #1f2937;
       --font: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
     body {
       margin: 0;
       padding: 0;
@@ -186,10 +179,7 @@ HOMEPAGE_HTML = """
       background: radial-gradient(circle at top, #0b1220 0%, #020617 55%, #020617 100%);
       color: var(--text);
     }
-    a {
-      color: inherit;
-      text-decoration: none;
-    }
+    a { color: inherit; text-decoration: none; }
     .page {
       max-width: 1180px;
       margin: 0 auto;
@@ -213,9 +203,7 @@ HOMEPAGE_HTML = """
       color: #020617;
       font-weight: 600;
     }
-    .chip-sub {
-      color: var(--muted);
-    }
+    .chip-sub { color: var(--muted); }
     h1 {
       font-size: 34px;
       line-height: 1.1;
@@ -266,11 +254,8 @@ HOMEPAGE_HTML = """
       align-items: flex-start;
     }
     @media (max-width: 900px) {
-      .layout-main {
-        grid-template-columns: minmax(0,1fr);
-      }
+      .layout-main { grid-template-columns: minmax(0,1fr); }
     }
-
     .snapshot-card {
       background: radial-gradient(circle at top left, #0f172a, #020617);
       border-radius: 18px;
@@ -332,7 +317,6 @@ HOMEPAGE_HTML = """
       font-size: 11px;
       color: var(--muted);
     }
-
     .section-title {
       font-size: 16px;
       font-weight: 600;
@@ -392,13 +376,8 @@ HOMEPAGE_HTML = """
       overflow: auto;
       white-space: pre;
     }
-    .log-line-ok {
-      color: #22c55e;
-    }
-    .log-line-err {
-      color: #f97373;
-    }
-
+    .log-line-ok { color: #22c55e; }
+    .log-line-err { color: #f97373; }
     .curl-card {
       background: rgba(15,23,42,0.98);
       border: 1px solid rgba(31,41,55,1);
@@ -422,13 +401,8 @@ HOMEPAGE_HTML = """
       border-radius: 999px;
       border: 1px solid rgba(148,163,184,0.7);
     }
-    .curl-pre {
-      white-space: pre;
-      overflow-x: auto;
-    }
-    .muted {
-      color: var(--muted);
-    }
+    .curl-pre { white-space: pre; overflow-x: auto; }
+    .muted { color: var(--muted); }
   </style>
 </head>
 <body>
@@ -657,7 +631,6 @@ async def meta():
 
 @app.get("/v1/env_debug")
 async def env_debug():
-    # маленький дебаг-енпоїнт, щоб дивитись, що реально підхопилось
     return {
         "CORE_URL": CORE_URL,
         "VRF_URL": VRF_URL,
@@ -677,10 +650,17 @@ async def random_proxy(
     params = {"n": n, "fmt": fmt}
     headers = {"X-API-Key": INTERNAL_R4_API_KEY}
 
-    async with httpx.AsyncClient(timeout=10.0) as client:
-        r = await client.get(upstream, params=params, headers=headers)
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            r = await client.get(upstream, params=params, headers=headers)
+    except httpx.HTTPError as e:
+        raise HTTPException(status_code=502, detail=f"core_unreachable: {e!s}")
 
-    return JSONResponse(status_code=r.status_code, content=r.json())
+    return Response(
+        content=r.content,
+        status_code=r.status_code,
+        media_type=r.headers.get("content-type", "text/plain"),
+    )
 
 
 @app.get("/v1/vrf")
@@ -692,10 +672,17 @@ async def vrf_proxy(
     params = {"sig": sig}
     headers = {"X-API-Key": INTERNAL_R4_API_KEY}
 
-    async with httpx.AsyncClient(timeout=15.0) as client:
-        r = await client.get(upstream, params=params, headers=headers)
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            r = await client.get(upstream, params=params, headers=headers)
+    except httpx.HTTPError as e:
+        raise HTTPException(status_code=502, detail=f"vrf_unreachable: {e!s}")
 
-    return JSONResponse(status_code=r.status_code, content=r.json())
+    return Response(
+        content=r.content,
+        status_code=r.status_code,
+        media_type=r.headers.get("content-type", "application/json"),
+    )
 
 
 @app.post("/v1/verify")
